@@ -6,10 +6,12 @@ import seaborn as sns
 from statsmodels.graphics.tsaplots import plot_pacf
 from statsmodels.graphics.tsaplots import plot_acf
 from statsmodels.tsa.statespace.sarimax import SARIMAX
+from statsmodels.tsa.arima.model import ARIMA
 from statsmodels.tsa.arima_process import ArmaProcess
 from sklearn.metrics import mean_squared_error
 from statsmodels.tsa.seasonal import seasonal_decompose
 from statsmodels.tsa.stattools import adfuller, acf, pacf
+from statsmodels.stats.diagnostic import acorr_ljungbox
 from scipy.stats import kruskal
 # from tqdm import tqdm_notebook
 from sklearn.linear_model import LinearRegression
@@ -125,17 +127,76 @@ if seasonality_test.pvalue < 0.05:
 else:
     print("The series does not show significant seasonality.")
 
-# roznicowanie - zrobic inne/ pomyslec nad tym aby osiagnac stacjonarnosc
+# roznicowanie
 df['log_diff'] = df['log_close'].diff()
 adfuller_test(df['log_diff'].dropna())
 
 # Wykresy korelogramu (ACF i PACF) po roznicowaniu
 plt.figure(figsize=(12, 6))
-plot_acf(df['log_diff'].dropna(), lags=40, ax=plt.gca())
+plot_acf(df['log_diff'].dropna(), lags=80, ax=plt.gca())
 plt.savefig('acf_plot2.png')
 plt.close()
 
 plt.figure(figsize=(12, 6))
-plot_pacf(df['log_diff'].dropna(), lags=40, ax=plt.gca())
+plot_pacf(df['log_diff'].dropna(), lags=80, ax=plt.gca())
 plt.savefig('pacf_plot2.png')
 plt.close()
+
+# Dopasowanie modelu ARIMA (1, 1, 0)
+model = ARIMA(df['log_close'], order=(1, 1, 0))
+model_fit = model.fit()
+print(model_fit.summary())
+model_fit.plot_diagnostics(figsize=(10, 8))
+plt.savefig('ARIMA.png')
+residuals = model_fit.resid
+
+# Test ADF na resztach
+adf_test = adfuller(residuals)
+print("ADF Test Statistic:", adf_test[0])
+print("p-value:", adf_test[1])
+
+if adf_test[1] < 0.05:
+    print("Reszty są stacjonarne.")
+else:
+    print("Reszty nie są stacjonarne.")
+
+# test na autokorelacje reszt
+ljung_box_test = acorr_ljungbox(residuals, lags=10)
+print("Test Ljunga-Boxa:")
+print(ljung_box_test)
+
+if all(ljung_box_test['lb_pvalue'] > 0.05):
+    print("Reszty są nieskorelowane.")
+else:
+    print("Reszty są skorelowane.")
+
+
+# prognozowanie z arima 110
+# Prognoza na 30 dni
+# forecast = model_fit.get_forecast(steps=30)
+# forecast_ci = forecast.conf_int()
+
+# # Wykres prognozy
+# plt.figure(figsize=(10, 6))
+# plt.plot(df.index, df['close'], label='History')
+# plt.plot(forecast.predicted_mean.index, forecast.predicted_mean, label='Forecast', color='red')
+# plt.fill_between(forecast_ci.index, 
+#                  forecast_ci.iloc[:, 0], 
+#                  forecast_ci.iloc[:, 1], color='pink', alpha=0.3)
+# plt.legend()
+# plt.show()
+
+# model sarimax
+# Dopasowanie modelu SARIMA(1, 1, 0)(1, 1, 0, 12)
+sarima_model = SARIMAX(df['log_close'], order=(1, 1, 0), seasonal_order=(1, 1, 0, 12))
+sarima_model_fit = sarima_model.fit()
+
+
+print(sarima_model_fit.summary())
+sarima_model_fit.plot_diagnostics(figsize=(10, 8))
+plt.savefig('SARIMA_12.png')
+
+# Test Ljunga-Boxa dla modelu SARIMA
+ljung_box_test_sarima = acorr_ljungbox(sarima_model_fit.resid, lags=10)
+print("Test Ljunga-Boxa dla SARIMA:")
+print(ljung_box_test_sarima)
