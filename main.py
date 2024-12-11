@@ -13,6 +13,8 @@ plt.rcParams['figure.figsize'] = (10, 8)
 
 # Load and preprocess data
 df = pd.read_csv('NKE.csv', header=0)
+print(df.head())
+print(df.describe())
 df = df.drop(['open', 'high', 'low', 'volume'], axis=1)
 df = df.loc[10300:11095]
 df['date'] = pd.to_datetime(df['date'])
@@ -64,10 +66,27 @@ print(model_fit.summary())
 model_fit.plot_diagnostics(figsize=(10, 8))
 plt.savefig('ARIMA.png')
 
+# ARIMA (1,1,0)
+model_110 = SARIMAX(df['log_close'], order=(0, 1, 0), simple_differencing=True)
+model110_fit = best_model.fit(disp=False)
+print(model110_fit.summary())
+model110_fit.plot_diagnostics(figsize=(10, 8))
+plt.savefig('ARIMA110.png')
+
 # Residuals analysis
 residuals = model_fit.resid
 adfuller_test(residuals)
 ljung_box_test = acorr_ljungbox(residuals, lags=10)
+print("Ljung-Box Test Results:")
+print(ljung_box_test)
+if all(ljung_box_test['lb_pvalue'] > 0.05):
+    print("Residuals are correlated.")
+else:
+    print("Residuals are not correlated.")
+
+residuals_arima110 = model110_fit.resid
+adfuller_test(residuals_arima110)
+ljung_box_test = acorr_ljungbox(residuals_arima110, lags=10)
 print("Ljung-Box Test Results:")
 print(ljung_box_test)
 if all(ljung_box_test['lb_pvalue'] > 0.05):
