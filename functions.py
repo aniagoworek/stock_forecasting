@@ -74,7 +74,7 @@ def decompose_series(series, period, filename):
     Perform time series decomposition and save the plot.
     """
     decomposition = seasonal_decompose(series, model='additive', period=period)
-    plt.figure(figsize=(20, 8))
+    plt.figure(figsize=(10, 8))
     plt.subplot(411)
     plt.plot(decomposition.observed, label='Observed')
     plt.legend(loc='upper left')
