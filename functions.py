@@ -26,7 +26,7 @@ def adfuller_test(series, verbose=True):
     return result
 
 
-def optimize_ARIMA(endog, order_list):
+def optimize_arima(endog, order_list):
     """
     Return DataFrame with ARIMA parameters and corresponding AIC.
     """
