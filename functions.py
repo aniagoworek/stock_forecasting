@@ -26,22 +26,6 @@ def adfuller_test(series, verbose=True):
     return result
 
 
-def optimize_arima(endog, order_list):
-    """
-    Return DataFrame with ARIMA parameters and corresponding AIC.
-    """
-    results = []
-    for order in tqdm(order_list, desc="Optimizing ARIMA parameters"):
-        try:
-            model = SARIMAX(endog, order=order, simple_differencing=False).fit(disp=False)
-            results.append([order, model.aic])
-        except Exception:
-            continue
-    result_df = pd.DataFrame(results, columns=['(p, d, q)', 'AIC'])
-    result_df = result_df.sort_values(by='AIC', ascending=True).reset_index(drop=True)
-    return result_df
-
-
 def plot_acf_pacf(series, filename_acf, filename_pacf):
     """
     Plot and save ACF and PACF plots.
